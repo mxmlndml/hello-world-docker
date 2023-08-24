@@ -1,0 +1,17 @@
+{
+  "name": "hello-world-docker-action",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build:app": "rimraf ./dist && tsc",
+    "start": "pnpm build:app && node ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "rimraf": "^5.0.1",
+    "typescript": "^5.1.6"
+  }
+}
