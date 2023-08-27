@@ -92,6 +92,12 @@
        runs-on: ubuntu-latest
 
        steps:
+         - name: Checkout
+           uses: actions/checkout@v3
+
+         - name: Set up QEMU
+           uses: docker/setup-qemu-action@v2
+
          - name: Setup Docker Buildx
            uses: docker/setup-buildx-action@v2
 
@@ -104,6 +110,7 @@
          - name: Build and push
            uses: docker/build-push-action@v4
            with:
+             context: .
              platforms: linux/amd64,linux/arm/v7,linux/arm64,linux/arm/v6
              push: true
              tags: <username>/<repository>:<tag>
