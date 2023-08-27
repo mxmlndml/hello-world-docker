@@ -1,6 +1,6 @@
 FROM node:alpine AS base
 # add pnpm
-RUN npm install -g pnpm
+RUN npm install -g pnpm --loglevel verbose
 
 
 FROM base as deps
