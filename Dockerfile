@@ -1,6 +1,6 @@
 FROM node:alpine AS base
 # add pnpm
-RUN wget -qO- https://get.pnpm.io/install.sh | ENV="$HOME/.shrc" SHELL="$(which sh)" sh -
+RUN wget -qO- https://get.pnpm.io/install.sh | ENV="$HOME/.shrc" SHELL="/bin/sh" /bin/sh -
 
 
 FROM base as deps
