@@ -1,6 +1,12 @@
 name: Docker Build and Push
 
-on: workflow_dispatch
+on:
+  push:
+    branches:
+      - "main"
+
+env:
+  REGISTRY_IMAGE: mxmlndml/hello-world-docker
 
 jobs:
   build:
