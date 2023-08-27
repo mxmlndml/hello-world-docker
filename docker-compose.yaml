@@ -1,0 +1,6 @@
+services:
+  hello-world-docker:
+    image: mxmlndml/hello-world-docker:latest
+    restart: always
+    environment:
+      - WHO_TO_GREET=World
