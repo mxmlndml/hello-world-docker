@@ -56,16 +56,60 @@
    CMD ["node", "./dist/index.js"]
    ```
 1. Build the image on the target machine using
-   `docker build -t <repository>/<image-name>:<tag>`
+   `docker build -t <username>/<repository>:<tag>`
 1. Create a `docker-compose.yaml` if the application consists either of multiple
    containers or it needs additional configuration like environment variables or
    port mappings
 1. Start the container either utilizing the `docker-compose.yaml` file using
    `docker-compose up` or with the `docker run` command using
-   `docker run -d <repository>/<image-name>:<tag>`
+   `docker run -d <username>/<repository>:<tag>`
 
 ## Push Image to Docker Hub
 
 1. Create a repository [on Docker Hub](https://hub.docker.com/repository/create)
 1. Push the image built locally to Docker Hub using
-   `docker push <repository>/<image-name>:<tag>`
+   `docker push <username>/<repository>:<tag>`
+
+## Automate Build and Push of Images with GitHub Actions
+
+1. Create a [new GitHub repository](https://repo.new) and push the code if not
+   done already
+1. Open the GitHub repository's Action secrets by navigating to the GitHub
+   repository → Settings → Secrets and variables → Actions → New repository
+   secret
+1. Add the username and a PAT of the Docker Hub account as repository secrets
+   called `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`. It is recommended to
+   create a new PAT per repository
+1. Create a `docker-build-push.yaml` file in the `.github/workflows` directory
+   with this content:
+   ```yaml
+   name: Docker Build and Push
+
+   on:
+     workflow_dispatch:
+       inputs:
+         branch:
+           description: Branch to build and push
+           required: true
+
+   jobs:
+     build-and-push:
+       runs-on: ubuntu-latest
+
+       steps:
+         - name: Setup Docker Buildx
+           uses: docker/setup-buildx-action@v2
+
+         - name: Login to Docker Hub
+           uses: docker/login-action@v2
+           with:
+             username: ${{ secrets.DOCKERHUB_USERNAME }}
+             password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+         - name: Build and push
+           uses: docker/build-push-action@v4
+           with:
+             push: true
+             tags: <username>/<repository>:<tag>
+   ```
+1. Push the changes and start the workflow manually
