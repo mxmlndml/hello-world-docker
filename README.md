@@ -63,3 +63,9 @@
 1. Start the container either utilizing the `docker-compose.yaml` file using
    `docker-compose up` or with the `docker run` command using
    `docker run -d <repository>/<image-name>:<tag>`
+
+## Push Image to Docker Hub
+
+1. Create a repository [on Docker Hub](https://hub.docker.com/repository/create)
+1. Push the image built locally to Docker Hub using
+   `docker push <repository>/<image-name>:<tag>`
