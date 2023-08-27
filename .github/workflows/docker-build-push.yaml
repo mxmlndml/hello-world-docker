@@ -26,6 +26,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          platforms: linux/arm/v7,linux/arm64
+          platforms: linux/arm64
           push: true
           tags: mxmlndml/hello-world-docker:latest

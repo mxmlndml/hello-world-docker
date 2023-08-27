@@ -111,7 +111,7 @@
            uses: docker/build-push-action@v4
            with:
              context: .
-             platforms: linux/amd64,linux/arm/v7,linux/arm64,linux/arm/v6
+             platforms: linux/arm64
              push: true
              tags: <username>/<repository>:<tag>
    ```
