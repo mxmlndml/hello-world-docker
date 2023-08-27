@@ -1,6 +1,6 @@
 FROM node:alpine AS base
 # add pnpm
-RUN npm install -g pnpm --loglevel verbose
+RUN wget -qO- https://get.pnpm.io/install.sh | ENV="$HOME/.bashrc" SHELL="$(which bash)" bash -
 
 
 FROM base as deps
