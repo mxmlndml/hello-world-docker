@@ -85,12 +85,7 @@
    ```yaml
    name: Docker Build and Push
 
-   on:
-     workflow_dispatch:
-       inputs:
-         branch:
-           description: Branch to build and push
-           required: true
+   on: workflow_dispatch
 
    jobs:
      build-and-push:
@@ -109,6 +104,7 @@
          - name: Build and push
            uses: docker/build-push-action@v4
            with:
+             platforms: linux/amd64,linux/arm/v7,linux/arm64,linux/arm/v6
              push: true
              tags: <username>/<repository>:<tag>
    ```
