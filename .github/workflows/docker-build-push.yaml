@@ -29,9 +29,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY_IMAGE }}
 
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v2
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -90,6 +87,10 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Debug
+        run: |
+          echo $DOCKER_METADATA_OUTPUT_JSON
 
       - name: Create manifest list and push
         working-directory: /tmp/digests
