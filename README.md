@@ -3,6 +3,10 @@
 ## Setup TypeScript App using pnpm
 
 1. Initialize node app with `pnpm init`
+1. [Chose a license](https://choosealicense.com) (eg.
+   [MIT](https://choosealicense.com/licenses/mit) for open source projects). Add
+   the license in a file called `LICENSE` and edit the `license` field of the
+   `package.json`
 1. Add node-specific files to `.gitignore`
    [using GitHub's template](https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore)
    with
@@ -15,45 +19,48 @@
    of the application
 1. Set the `main` field in the `package.json` to `dist/index.js`
 1. Add the rimraf module with `pnpm add rimraf`
-1. Create npm scripts that build and start the TypeScript app:
-   `"build:app": "rimraf ./dist && tsc", "start", "pnpm build:app && node ."`
-1. [Chose a license](https://choosealicense.com) (eg.
-   [MIT](https://choosealicense.com/licenses/mit) for open source projects). Add
-   the license in a file called `LICENSE`, in the `license` field of the
-   `package.json` and in the GitHub repository
+1. Create node scripts for development as well as building and starting the
+   TypeScript app:
+   ```json
+   "scripts": {
+       "start": "node .",
+       "dev": "tsc -w",
+       "build": "rimraf ./dist && tsc"
+   }
+   ```
+1. Add TypeScript definitions for node.js with `pnpm add @types/node`
 
 ## Dockerize TypeScript App
 
 1. Create a `Dockerfile` with this content:
    ```Dockerfile
-   FROM node:alpine AS base
-   # add pnpm
+   FROM node:slim AS base
+   ENV PNPM_HOME="/pnpm"
+   ENV PATH="${PNPM_HOME}:${PATH}"
    RUN corepack enable
-   RUN corepack prepare pnpm@latest --activate
-
-
-   FROM base as deps
+   COPY . /app
    WORKDIR /app
-   # install dependencies with pnpm
-   COPY package.json pnpm-lock.yaml* ./
-   RUN pnpm i --frozen-lockfile
 
+   FROM base as prod-deps
+   RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
 
-   FROM base as builder
-   WORKDIR /app
-   COPY --from=deps /app/node_modules ./node_modules
-   COPY . .
-   RUN pnpm build:app
+   FROM base AS build
+   RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+   RUN pnpm run build
 
-
-   FROM base as runner
-   WORKDIR /app
-   COPY --from=builder /app/dist ./dist
-   COPY --from=builder /app/node_modules ./node_modules
-
-   USER node
-
-   CMD ["node", "./dist/index.js"]
+   FROM base
+   COPY --from=prod-deps /app/node_modules /app/node_modules
+   COPY --from=build /app/dist /app/dist
+   CMD [ "pnpm", "start" ]
+   ```
+1. Add node/pnpm-specific files to `.dockerignore`
+   [using pnpm's template](https://pnpm.io/docker#example-1-build-a-bundle-in-a-docker-container):
+   ```
+   node_modules
+   .git
+   .gitignore
+   *.md
+   dist
    ```
 1. Build the image on the target machine using
    `docker build -t <username>/<repository>:<tag>`
@@ -85,20 +92,36 @@
    ```yaml
    name: Docker Build and Push
 
-   on: workflow_dispatch
+   on:
+     push:
+       tags:
+         - "*"
+
+   env:
+     REGISTRY_IMAGE: <username>/<repository>
 
    jobs:
-     build-and-push:
+     build:
        runs-on: ubuntu-latest
+       strategy:
+         fail-fast: false
+         matrix:
+           platform:
+             - linux/amd64
+             - linux/arm/v7
+             - linux/arm64
 
        steps:
          - name: Checkout
            uses: actions/checkout@v3
 
-         - name: Set up QEMU
-           uses: docker/setup-qemu-action@v2
+         - name: Docker meta
+           id: meta
+           uses: docker/metadata-action@v4
+           with:
+             images: ${{ env.REGISTRY_IMAGE }}
 
-         - name: Setup Docker Buildx
+         - name: Set up Docker Buildx
            uses: docker/setup-buildx-action@v2
 
          - name: Login to Docker Hub
@@ -107,12 +130,65 @@
              username: ${{ secrets.DOCKERHUB_USERNAME }}
              password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-         - name: Build and push
+         - name: Build and push by digest
+           id: build
            uses: docker/build-push-action@v4
            with:
              context: .
-             platforms: linux/arm64
-             push: true
-             tags: <username>/<repository>:<tag>
+             platforms: ${{ matrix.platform }}
+             labels: ${{ steps.meta.outputs.labels }}
+             outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+
+         - name: Export digest
+           run: |
+             mkdir -p /tmp/digests
+             digest=${{ steps.build.outputs.digest }}
+             touch "/tmp/digests/${digest#sha256:}"
+
+         - name: Upload digest
+           uses: actions/upload-artifact@v3
+           with:
+             name: digests
+             path: /tmp/digests/*
+             if-no-files-found: error
+             retention-days: 1
+
+     merge:
+       runs-on: ubuntu-latest
+       needs:
+         - build
+
+       steps:
+         - name: Download digests
+           uses: actions/download-artifact@v3
+           with:
+             name: digests
+             path: /tmp/digests
+
+         - name: Setup Docker Buildx
+           uses: docker/setup-buildx-action@v2
+
+         - name: Docker meta
+           id: meta
+           uses: docker/metadata-action@v4
+           with:
+             images: ${{ env.REGISTRY_IMAGE }}
+
+         - name: Login to Docker Hub
+           uses: docker/login-action@v2
+           with:
+             username: ${{ secrets.DOCKERHUB_USERNAME }}
+             password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+         - name: Create manifest list and push
+           working-directory: /tmp/digests
+           run: |
+             docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+               $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
+
+         - name: Inspect image
+           run: |
+             docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}
    ```
-1. Push the changes and start the workflow manually
+1. Start the workflow by adding and pushing a new git tag using
+   `git tag <semantic-version>` and `git push origin <semantic-version>`
