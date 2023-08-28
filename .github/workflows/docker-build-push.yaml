@@ -89,8 +89,9 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Debug
+        working-directory: /tmp/digests
         run: |
-          echo $DOCKER_METADATA_OUTPUT_JSON
+          echo $DOCKER_METADATA_OUTPUT_JSON && echo $(ls)
 
       - name: Create manifest list and push
         working-directory: /tmp/digests
