@@ -11,14 +11,14 @@
    [using GitHub's template](https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore)
    with
    `curl https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore >> .gitignore`
-1. Add the TypeScript module with `pnpm add typescript`
+1. Add the TypeScript module with `pnpm add -D typescript`
 1. Initialize TypeScript with `pnpm exec tsc --init`
 1. Configure TypeScript to use a root (`./src`) and out (`./dist`) directory in
    the `tsconf.json` file
 1. Create an `index.ts` file in the `./src` directory as the primary entry point
    of the application
 1. Set the `main` field in the `package.json` to `dist/index.js`
-1. Add the rimraf module with `pnpm add rimraf`
+1. Add the rimraf module with `pnpm add -D rimraf`
 1. Create node scripts for development as well as building and starting the
    TypeScript app:
    ```json
@@ -28,7 +28,7 @@
        "build": "rimraf ./dist && tsc"
    }
    ```
-1. Add TypeScript definitions for node.js with `pnpm add @types/node`
+1. Add TypeScript definitions for node.js with `pnpm add -D @types/node`
 
 ## Dockerize TypeScript App
 
